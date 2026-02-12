@@ -89,6 +89,16 @@ impl ProviderCapabilities {
                     "Profiles".to_string(),
                 ],
             }),
+            "DSE" => Some(Self {
+                instruments: "Stocks".to_string(),
+                coverage: "Tanzania (DSE)".to_string(),
+                features: vec![
+                    "Real-time".to_string(),
+                    "Historical".to_string(),
+                    "Search".to_string(),
+                    "Profiles".to_string(),
+                ],
+            }),
             _ => None,
         }
     }

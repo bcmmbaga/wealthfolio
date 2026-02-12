@@ -917,6 +917,7 @@ where
                     | DATA_SOURCE_MARKET_DATA_APP
                     | DATA_SOURCE_METAL_PRICE_API
                     | DATA_SOURCE_FINNHUB
+                    | DATA_SOURCE_DSE
             );
             // Check if API key is set (this may trigger keychain prompt on macOS)
             let has_key = if requires_key {

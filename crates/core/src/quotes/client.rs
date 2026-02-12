@@ -38,7 +38,7 @@ use crate::secrets::SecretStore;
 
 use wealthfolio_market_data::{
     mic_to_currency, mic_to_exchange_name, yahoo_exchange_to_mic, yahoo_suffix_to_mic,
-    AlphaVantageProvider, AssetProfile as MarketAssetProfile, FinnhubProvider,
+    AlphaVantageProvider, AssetProfile as MarketAssetProfile, DseProvider, FinnhubProvider,
     MarketDataAppProvider, MetalPriceApiProvider, ProviderId, ProviderRegistry,
     Quote as MarketQuote, QuoteContext, ResolverChain, SearchResult as MarketSearchResult,
     YahooProvider,
@@ -204,6 +204,15 @@ impl MarketDataClient {
                     }
                 }
                 Ok(None)
+            }
+            DATA_SOURCE_DSE => {
+                let key = secret_store
+                    .get_secret(provider_id)
+                    .ok()
+                    .flatten()
+                    .unwrap_or_default();
+                let provider = DseProvider::new(key);
+                Ok(Some(Arc::new(provider)))
             }
             _ => {
                 warn!("Unknown provider ID: {}", provider_id);

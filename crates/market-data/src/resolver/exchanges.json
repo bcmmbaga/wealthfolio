@@ -616,6 +616,14 @@
       "timezone": "Africa/Cairo",
       "close": [14, 30],
       "yahoo": { "suffix": ".CA", "codes": ["CAI"] }
+    },
+    {
+      "mic": "XDAR",
+      "name": "DSE",
+      "long_name": "Dar es Salaam Stock Exchange",
+      "currency": "TZS",
+      "timezone": "Africa/Dar_es_Salaam",
+      "close": [14, 0]
     }
   ],
   "currency_priority": {

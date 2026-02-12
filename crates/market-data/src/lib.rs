@@ -77,6 +77,7 @@ pub use resolver::{
 
 // Re-export provider types
 pub use provider::alpha_vantage::AlphaVantageProvider;
+pub use provider::dse::DseProvider;
 pub use provider::finnhub::FinnhubProvider;
 pub use provider::marketdata_app::MarketDataAppProvider;
 pub use provider::metal_price_api::MetalPriceApiProvider;
