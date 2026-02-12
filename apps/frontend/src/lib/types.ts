@@ -219,6 +219,8 @@ export interface SymbolInput {
   kind?: string; // e.g., "INVESTMENT", "OTHER" - asset kind
   name?: string; // Asset name (for custom assets)
   quoteMode?: QuoteMode;
+  quoteCcy?: string; // Optional quote currency hint from search/provider (e.g., "GBp")
+  instrumentType?: string; // Optional instrument type hint (e.g., "EQUITY", "CRYPTO")
 }
 
 export interface ActivityCreate {
@@ -807,6 +809,7 @@ export interface UpdateAssetProfile {
   notes?: string | null;
   kind?: AssetKind | null;
   quoteMode?: QuoteMode | null;
+  instrumentExchangeMic?: string | null;
   providerConfig?: Record<string, unknown> | null;
 }
 

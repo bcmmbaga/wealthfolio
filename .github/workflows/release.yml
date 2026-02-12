@@ -36,7 +36,7 @@ jobs:
         if: contains(matrix.platform, 'ubuntu')
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf pkg-config libssl-dev libsoup2.4-dev javascriptcoregtk-4.0 webkit2gtk-4.0
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf pkg-config libssl-dev libsoup2.4-dev javascriptcoregtk-4.0 webkit2gtk-4.0 xdg-utils
 
       - name: Rust setup
         uses: dtolnay/rust-toolchain@stable
@@ -65,14 +65,26 @@ jobs:
         if: matrix.platform == 'windows-latest'
         run: rustup target add aarch64-pc-windows-msvc x86_64-pc-windows-msvc
 
+      - name: Determine Windows bundle targets
+        if: contains(matrix.platform, 'windows')
+        id: win-bundles
+        shell: bash
+        run: |
+          # If version has a non-numeric pre-release (e.g. beta), skip MSI (WiX requires numeric-only)
+          ARGS=$(node -e "
+            const v = require('./apps/tauri/tauri.conf.json').version;
+            console.log(/\-.*[a-zA-Z]/.test(v) ? '--bundles nsis' : '');
+          ")
+          echo "args=$ARGS" >> "$GITHUB_OUTPUT"
+
       - name: Build the app
         uses: tauri-apps/tauri-action@v0
 
         env:
-          # Wealthfolio Connect configuration
-          CONNECT_AUTH_URL: https://liyiikzhilvnivjgidpw.supabase.co
-          CONNECT_AUTH_PUBLISHABLE_KEY: sb_publishable_ZSZbXNtWtnh9i2nqJ2UL4A_NV8ZVutd
-          CONNECT_API_URL: https://api.wealthfolio.app
+          # Wealthfolio Connect configuration (disabled for beta)
+          # CONNECT_AUTH_URL: https://liyiikzhilvnivjgidpw.supabase.co
+          # CONNECT_AUTH_PUBLISHABLE_KEY: sb_publishable_ZSZbXNtWtnh9i2nqJ2UL4A_NV8ZVutd
+          # CONNECT_API_URL: https://api.wealthfolio.app
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -88,4 +100,4 @@ jobs:
           releaseBody: "See the assets to download and install this version."
           releaseDraft: true
           prerelease: false
-          args: ${{ matrix.args }}
+          args: ${{ matrix.args }} ${{ steps.win-bundles.outputs.args }}

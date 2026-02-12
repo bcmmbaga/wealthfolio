@@ -180,6 +180,10 @@ pub struct SymbolInput {
     pub name: Option<String>,
     /// Quote mode: "MARKET" or "MANUAL" - controls how asset is priced
     pub quote_mode: Option<String>,
+    /// Optional quote currency hint from symbol search/provider (e.g., "GBp")
+    pub quote_ccy: Option<String>,
+    /// Optional instrument type hint from symbol search/provider (e.g., "EQUITY", "CRYPTO")
+    pub instrument_type: Option<String>,
 }
 
 /// Input model for creating a new activity
@@ -285,6 +289,16 @@ impl NewActivity {
     pub fn get_quote_mode(&self) -> Option<&str> {
         self.symbol.as_ref().and_then(|a| a.quote_mode.as_deref())
     }
+
+    pub fn get_quote_ccy_hint(&self) -> Option<&str> {
+        self.symbol.as_ref().and_then(|a| a.quote_ccy.as_deref())
+    }
+
+    pub fn get_instrument_type_hint(&self) -> Option<&str> {
+        self.symbol
+            .as_ref()
+            .and_then(|a| a.instrument_type.as_deref())
+    }
 }
 
 /// Input model for updating an existing activity
@@ -382,6 +396,16 @@ impl ActivityUpdate {
     pub fn get_quote_mode(&self) -> Option<&str> {
         self.symbol.as_ref().and_then(|a| a.quote_mode.as_deref())
     }
+
+    pub fn get_quote_ccy_hint(&self) -> Option<&str> {
+        self.symbol.as_ref().and_then(|a| a.quote_ccy.as_deref())
+    }
+
+    pub fn get_instrument_type_hint(&self) -> Option<&str> {
+        self.symbol
+            .as_ref()
+            .and_then(|a| a.instrument_type.as_deref())
+    }
 }
 
 /// Request payload grouping multiple activity mutations.
@@ -451,6 +475,7 @@ pub struct ActivityDetails {
     pub account_currency: String,
     pub asset_symbol: String,
     pub asset_name: Option<String>,
+    pub exchange_mic: Option<String>,
     pub asset_pricing_mode: String, // MARKET, MANUAL, DERIVED, NONE
     // Sync/source metadata
     pub source_system: Option<String>,
@@ -555,6 +580,10 @@ pub struct ActivityImport {
     pub symbol_name: Option<String>,
     /// Resolved exchange MIC for the symbol (populated during validation)
     pub exchange_mic: Option<String>,
+    /// Optional quote currency hint for the resolved symbol (e.g., "GBp")
+    pub quote_ccy: Option<String>,
+    /// Optional resolved instrument type hint (e.g., "EQUITY", "CRYPTO")
+    pub instrument_type: Option<String>,
     pub errors: Option<std::collections::HashMap<String, Vec<String>>>,
     pub warnings: Option<std::collections::HashMap<String, Vec<String>>>,
     #[serde(default)]
@@ -602,6 +631,10 @@ pub struct SymbolMappingMeta {
     pub exchange_mic: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub symbol_name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub quote_ccy: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub instrument_type: Option<String>,
 }
 
 /// Model for activity import mapping data with structured mappings
@@ -1063,6 +1096,8 @@ impl From<ActivityImport> for NewActivity {
                 kind: None,
                 name: import.symbol_name,
                 quote_mode: None,
+                quote_ccy: import.quote_ccy,
+                instrument_type: import.instrument_type,
             })
         };
 
