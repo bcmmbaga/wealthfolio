@@ -30,6 +30,10 @@ export async function syncBrokerData(): Promise<void> {
   return invoke<void>("sync_broker_data");
 }
 
+export async function syncDseBrokerData(): Promise<void> {
+  return invoke<void>("sync_dse_broker_data");
+}
+
 export async function getSyncedAccounts(): Promise<Account[]> {
   return invoke<Account[]>("get_synced_accounts");
 }

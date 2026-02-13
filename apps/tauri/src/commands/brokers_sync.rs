@@ -293,5 +293,65 @@ pub async fn get_import_runs(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// DSE Broker Sync Command
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Sync DSE broker data (free, no subscription required).
+/// Talks directly to the user's local DSE API service using the same API key
+/// configured for DSE market data.
+#[tauri::command]
+pub async fn sync_dse_broker_data(
+    app: AppHandle,
+    state: State<'_, Arc<ServiceContext>>,
+) -> Result<(), String> {
+    info!("[DSE] Starting DSE broker data sync (non-blocking)...");
+
+    let context = state.inner().clone();
+    let app_handle = app.clone();
+
+    tauri::async_runtime::spawn(async move {
+        match perform_dse_broker_sync(&context, Some(&app_handle)).await {
+            Ok(_result) => {
+                info!("[DSE] DSE broker sync completed successfully");
+            }
+            Err(err) => {
+                error!("[DSE] DSE broker sync failed: {}", err);
+            }
+        }
+    });
+
+    Ok(())
+}
+
+/// Core DSE broker sync logic.
+async fn perform_dse_broker_sync(
+    context: &Arc<ServiceContext>,
+    app: Option<&AppHandle>,
+) -> Result<SyncResult, String> {
+    use wealthfolio_connect::DseBrokerApiClient;
+
+    // Read DSE API key from the secret store (same key used for DSE market data)
+    let secret_store = crate::secret_store::shared_secret_store();
+    let api_key = secret_store
+        .get_secret("DSE")
+        .map_err(|e| format!("Failed to read DSE API key: {}", e))?
+        .unwrap_or_default();
+
+    let client = DseBrokerApiClient::new(api_key);
+
+    if let Some(app_handle) = app {
+        let reporter = Arc::new(TauriProgressReporter::new(app_handle.clone()));
+        let orchestrator =
+            SyncOrchestrator::new(context.sync_service(), reporter, SyncConfig::default());
+        orchestrator.sync_all(&client).await
+    } else {
+        let reporter = Arc::new(wealthfolio_connect::NoOpProgressReporter);
+        let orchestrator =
+            SyncOrchestrator::new(context.sync_service(), reporter, SyncConfig::default());
+        orchestrator.sync_all(&client).await
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Foreground Sync Command
 // ─────────────────────────────────────────────────────────────────────────────

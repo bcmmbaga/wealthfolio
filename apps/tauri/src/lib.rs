@@ -382,6 +382,7 @@ pub fn run() {
             commands::wealthfolio_connect::store_sync_session,
             commands::wealthfolio_connect::clear_sync_session,
             commands::brokers_sync::sync_broker_data,
+            commands::brokers_sync::sync_dse_broker_data,
             commands::brokers_sync::get_synced_accounts,
             commands::brokers_sync::get_platforms,
             commands::brokers_sync::list_broker_connections,

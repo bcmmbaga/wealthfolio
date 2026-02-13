@@ -232,7 +232,7 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
                 platform_id,
                 account_number: broker_account.account_number.clone(),
                 meta: broker_account.to_meta_json(),
-                provider: Some("SNAPTRADE".to_string()),
+                provider: broker_account.provider.clone().or(Some("SNAPTRADE".to_string())),
                 provider_account_id: Some(provider_account_id.clone()),
                 is_archived: false,
                 tracking_mode: TrackingMode::NotSet,

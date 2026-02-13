@@ -555,6 +555,50 @@ async fn perform_broker_activities_only_sync(
     Ok(summary)
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// DSE Broker Sync (free, no subscription required)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Trigger a DSE broker data sync. Returns immediately with 202 Accepted.
+async fn sync_dse_broker_data(State(state): State<Arc<AppState>>) -> StatusCode {
+    info!("[DSE] Starting DSE broker data sync (non-blocking)...");
+
+    tokio::spawn(async move {
+        match perform_dse_broker_sync(&state).await {
+            Ok(_result) => {
+                info!("[DSE] DSE broker sync completed successfully");
+            }
+            Err(err) => {
+                error!("[DSE] DSE broker sync failed: {}", err);
+            }
+        }
+    });
+
+    StatusCode::ACCEPTED
+}
+
+/// Core DSE broker sync logic for the web server.
+async fn perform_dse_broker_sync(state: &AppState) -> Result<SyncResult, String> {
+    use wealthfolio_connect::DseBrokerApiClient;
+
+    let api_key = state
+        .secret_store
+        .get_secret("DSE")
+        .map_err(|e| format!("Failed to read DSE API key: {}", e))?
+        .unwrap_or_default();
+
+    let client = DseBrokerApiClient::new(api_key);
+
+    let reporter = Arc::new(EventBusProgressReporter::new(state.event_bus.clone()));
+    let orchestrator = SyncOrchestrator::new(
+        state.connect_sync_service.clone(),
+        reporter,
+        SyncConfig::default(),
+    );
+
+    orchestrator.sync_all(&client).await
+}
+
 async fn get_subscription_plans(
     State(state): State<Arc<AppState>>,
 ) -> ApiResult<Json<PlansResponse>> {
@@ -787,6 +831,8 @@ pub fn router() -> Router<Arc<AppState>> {
         .route("/connect/accounts", get(list_broker_accounts))
         // Unified sync (non-blocking, emits SSE events)
         .route("/connect/sync", post(sync_broker_data))
+        // DSE broker sync (free, no subscription required)
+        .route("/connect/sync/dse", post(sync_dse_broker_data))
         // Individual sync operations (kept for backwards compatibility)
         .route("/connect/sync/connections", post(sync_broker_connections))
         .route("/connect/sync/accounts", post(sync_broker_accounts))

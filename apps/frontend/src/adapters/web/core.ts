@@ -175,6 +175,7 @@ export const COMMANDS: CommandMap = {
   list_broker_connections: { method: "GET", path: "/connect/connections" },
   list_broker_accounts: { method: "GET", path: "/connect/accounts" },
   sync_broker_data: { method: "POST", path: "/connect/sync" },
+  sync_dse_broker_data: { method: "POST", path: "/connect/sync/dse" },
   sync_broker_connections: { method: "POST", path: "/connect/sync/connections" },
   sync_broker_accounts: { method: "POST", path: "/connect/sync/accounts" },
   sync_broker_activities: { method: "POST", path: "/connect/sync/activities" },
@@ -965,6 +966,7 @@ export const invoke = async <T>(command: string, payload?: Record<string, unknow
     case "list_broker_connections":
     case "list_broker_accounts":
     case "sync_broker_data":
+    case "sync_dse_broker_data":
     case "sync_broker_connections":
     case "sync_broker_accounts":
     case "sync_broker_activities":
@@ -1172,6 +1174,7 @@ export const invoke = async <T>(command: string, payload?: Record<string, unknow
     "get_synced_accounts",
     "get_platforms",
     "sync_broker_data",
+    "sync_dse_broker_data",
     "store_sync_session",
     "clear_sync_session",
     "get_sync_session_status",

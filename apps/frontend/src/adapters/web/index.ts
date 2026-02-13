@@ -189,6 +189,7 @@ export {
 // Connect Commands (Broker + Device Sync + Auth)
 export {
   syncBrokerData,
+  syncDseBrokerData,
   getSyncedAccounts,
   getPlatforms,
   listBrokerConnections,

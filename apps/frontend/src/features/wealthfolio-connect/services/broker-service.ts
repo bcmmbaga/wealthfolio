@@ -5,6 +5,7 @@
 import {
   logger,
   syncBrokerData as syncBrokerDataAdapter,
+  syncDseBrokerData as syncDseBrokerDataAdapter,
   getSyncedAccounts as getSyncedAccountsAdapter,
   getPlatforms as getPlatformsAdapter,
   listBrokerConnections as listBrokerConnectionsAdapter,
@@ -37,6 +38,10 @@ import type {
  */
 export const syncBrokerData = async (): Promise<void> => {
   await syncBrokerDataAdapter();
+};
+
+export const syncDseBrokerData = async (): Promise<void> => {
+  await syncDseBrokerDataAdapter();
 };
 
 export const getSyncedAccounts = async (): Promise<Account[]> => {

@@ -6,6 +6,7 @@
 #[cfg(feature = "broker")]
 pub mod broker;
 pub mod client;
+pub mod dse_client;
 pub mod platform;
 pub mod state;
 
@@ -22,6 +23,9 @@ pub use broker::{
 
 // Re-export the HTTP client and public functions
 pub use client::{fetch_subscription_plans_public, ConnectApiClient, DEFAULT_CLOUD_API_URL};
+
+// Re-export the DSE broker client
+pub use dse_client::DseBrokerApiClient;
 
 pub use platform::{Platform, PlatformDB, PlatformRepository};
 pub use state::{BrokerSyncState, BrokerSyncStateDB, BrokerSyncStateRepository};

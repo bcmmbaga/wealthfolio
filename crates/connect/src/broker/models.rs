@@ -118,6 +118,11 @@ pub struct BrokerAccount {
     /// Whether this account is shared with the household
     #[serde(default)]
     pub shared_with_household: bool,
+
+    /// Provider identifier (e.g., "SNAPTRADE", "DSE"). Defaults to None
+    /// which the sync service treats as SNAPTRADE for backward compatibility.
+    #[serde(default)]
+    pub provider: Option<String>,
 }
 
 fn default_sync_enabled() -> bool {

@@ -9,6 +9,8 @@ import {
 } from "@/features/wealthfolio-connect/hooks";
 import { ConnectEmptyState } from "@/features/wealthfolio-connect/components/connect-empty-state";
 import { useSyncBrokerData } from "@/features/wealthfolio-connect/hooks/use-sync-broker-data";
+import { useSyncDseBrokerData } from "@/features/wealthfolio-connect/hooks/use-sync-dse-broker-data";
+import { useMarketDataProviders } from "@/hooks/use-market-data-providers";
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
 import { Button } from "@wealthfolio/ui/components/ui/button";
 import { Badge } from "@wealthfolio/ui/components/ui/badge";
@@ -52,7 +54,9 @@ export default function ConnectPage() {
   const { status, lastSyncTime } = useAggregatedSyncStatus();
   const { data: brokerAccounts = [], isLoading: isLoadingAccounts } = useBrokerAccounts();
   const { mutate: syncBrokerData, isPending: isSyncing } = useSyncBrokerData();
+  const { mutate: syncDseBrokerData, isPending: isDseSyncing } = useSyncDseBrokerData();
   const { data: importRunsData } = useImportRunsInfinite({ pageSize: 10 });
+  const { data: marketDataProviders = [] } = useMarketDataProviders();
   const { accounts: localAccounts } = useAccounts({ filterActive: false, includeArchived: false }); // Get all accounts including inactive
 
   // Fetch broker connections for stats
@@ -124,6 +128,16 @@ export default function ConnectPage() {
     const subStatus = userInfo.team.subscription_status;
     return subStatus === "active" || subStatus === "trialing";
   }, [userInfo]);
+
+  // Check if DSE market data provider is configured
+  const hasDseProvider = useMemo(() => {
+    return marketDataProviders.some((p) => p.id === "DSE");
+  }, [marketDataProviders]);
+
+  // DSE synced accounts (accounts with provider=DSE)
+  const dseSyncedAccounts = useMemo(() => {
+    return localAccounts.filter((acc) => acc.provider === "DSE");
+  }, [localAccounts]);
 
   // Get status badge props
   const getStatusBadge = (currentStatus: AggregatedSyncStatus) => {
@@ -210,13 +224,55 @@ export default function ConnectPage() {
     );
   }
 
-  // Show empty state if not enabled or not connected
-  if (!isEnabled || !isConnected || !hasSubscription) {
+  // Show empty state if not enabled/connected AND no DSE provider
+  if ((!isEnabled || !isConnected || !hasSubscription) && !hasDseProvider) {
     return (
       <Page>
         <PageHeader heading="Connect" />
         <PageContent>
           <ConnectEmptyState />
+        </PageContent>
+      </Page>
+    );
+  }
+
+  // Show DSE-only view when no cloud subscription but DSE provider is configured
+  if (!hasSubscription && hasDseProvider) {
+    return (
+      <Page>
+        <PageHeader
+          heading="Connect"
+          text="Sync DSE broker accounts into your local database"
+          actions={
+            <Button
+              onClick={() => syncDseBrokerData()}
+              disabled={isDseSyncing || status === "running"}
+              size="sm"
+              variant="outline"
+            >
+              {isDseSyncing || status === "running" ? (
+                <>
+                  <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <Icons.RefreshCw className="mr-2 h-4 w-4" />
+                  Sync DSE
+                </>
+              )}
+            </Button>
+          }
+        />
+        <PageContent>
+          <div className="mx-auto max-w-5xl space-y-6">
+            <DseSyncSection
+              accounts={dseSyncedAccounts}
+              lastSyncTime={lastSyncTime}
+              onSync={() => syncDseBrokerData()}
+              isSyncing={isDseSyncing || status === "running"}
+            />
+          </div>
         </PageContent>
       </Page>
     );
@@ -415,6 +471,16 @@ export default function ConnectPage() {
             </Card>
           </div>
 
+          {/* DSE Broker Section (shown when DSE provider is configured) */}
+          {hasDseProvider && (
+            <DseSyncSection
+              accounts={dseSyncedAccounts}
+              lastSyncTime={lastSyncTime}
+              onSync={() => syncDseBrokerData()}
+              isSyncing={isDseSyncing || status === "running"}
+            />
+          )}
+
           {/* Recent Activity */}
           <Card className="border">
             <CardHeader className="pb-3">
@@ -549,6 +615,81 @@ function AccountItem({
         <TrackingModeBadge account={localAccount} syncEnabled={account.sync_enabled} />
       )}
     </div>
+  );
+}
+
+// DSE Sync Section
+function DseSyncSection({
+  accounts,
+  lastSyncTime,
+  onSync,
+  isSyncing,
+}: {
+  accounts: Account[];
+  lastSyncTime: string | null;
+  onSync: () => void;
+  isSyncing: boolean;
+}) {
+  return (
+    <Card className="border">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-base font-medium">
+            <Icons.Wallet className="h-4 w-4 text-green-600 dark:text-green-400" />
+            DSE Broker Sync
+          </CardTitle>
+          <div className="flex items-center gap-3">
+            {lastSyncTime && (
+              <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
+                <Icons.Clock className="h-3.5 w-3.5" />
+                {formatDistanceToNow(new Date(lastSyncTime), { addSuffix: false })} ago
+              </span>
+            )}
+            <Button onClick={onSync} disabled={isSyncing} size="sm" variant="outline">
+              {isSyncing ? (
+                <>
+                  <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <Icons.RefreshCw className="mr-2 h-4 w-4" />
+                  Sync DSE
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {accounts.length === 0 ? (
+          <p className="text-muted-foreground py-4 text-center text-sm">
+            No DSE accounts synced yet. Click &quot;Sync DSE&quot; to import your CDS accounts.
+          </p>
+        ) : (
+          <div className="divide-border divide-y">
+            {accounts.map((account) => (
+              <div
+                key={account.id}
+                className="hover:bg-muted/30 flex items-center gap-3 px-2 py-3 transition-colors"
+              >
+                <div className="bg-muted text-muted-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-medium">
+                  {getInitials(account.name)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-medium">{account.name}</span>
+                    <StatusDot status="healthy" />
+                  </div>
+                  <p className="text-muted-foreground text-xs">{account.currency} &middot; DSE</p>
+                </div>
+                <TrackingModeBadge account={account} syncEnabled={true} />
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
