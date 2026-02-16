@@ -42,9 +42,17 @@ struct DseAccount {
 
 #[derive(Debug, Deserialize)]
 struct DseActivitiesResponse {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_null_as_empty")]
     data: Vec<DseActivity>,
     pagination: Option<DsePagination>,
+}
+
+fn deserialize_null_as_empty<'de, D, T>(deserializer: D) -> std::result::Result<Vec<T>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: serde::de::DeserializeOwned,
+{
+    Option::<Vec<T>>::deserialize(deserializer).map(|opt| opt.unwrap_or_default())
 }
 
 #[derive(Debug, Deserialize)]
