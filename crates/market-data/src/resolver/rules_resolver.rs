@@ -63,9 +63,11 @@ impl RulesResolver {
     ) -> Option<ProviderInstrument> {
         let symbol = match mic {
             Some(mic) => {
-                // Look up suffix for this MIC and provider
-                let suffix = self.exchange_map.get_suffix(mic, provider)?;
-                Arc::from(format!("{}{}", ticker, suffix))
+                // Look up suffix for this MIC and provider; use raw ticker if not found
+                match self.exchange_map.get_suffix(mic, provider) {
+                    Some(suffix) => Arc::from(format!("{}{}", ticker, suffix)),
+                    None => ticker.clone(),
+                }
             }
             None => {
                 // No MIC = assume US market, no suffix needed
@@ -421,8 +423,14 @@ mod tests {
 
         let result = resolver.resolve(&"YAHOO".into(), &context);
 
-        // Should return None for unknown MICs
-        assert!(result.is_none());
+        // Should fall back to raw ticker for unknown MICs
+        let resolved = result.unwrap().unwrap();
+        match resolved.instrument {
+            ProviderInstrument::EquitySymbol { symbol } => {
+                assert_eq!(symbol.as_ref(), "TEST");
+            }
+            _ => panic!("Expected EquitySymbol"),
+        }
     }
 
     #[test]

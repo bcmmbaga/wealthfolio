@@ -242,7 +242,7 @@ mod tests {
     }
 
     #[test]
-    fn test_chain_resolution_failed() {
+    fn test_chain_resolution_unknown_mic_falls_back_to_raw_ticker() {
         let chain = ResolverChain::new();
 
         let context = QuoteContext {
@@ -255,14 +255,13 @@ mod tests {
             preferred_provider: None,
         };
 
-        let result = chain.resolve(&"UNKNOWN_PROVIDER".into(), &context);
-
-        assert!(result.is_err());
-        match result.unwrap_err() {
-            MarketDataError::ResolutionFailed { provider } => {
-                assert_eq!(provider, "UNKNOWN_PROVIDER");
+        // Unknown MIC should fall back to raw ticker, not fail
+        let resolved = chain.resolve(&"UNKNOWN_PROVIDER".into(), &context).unwrap();
+        match resolved.instrument {
+            ProviderInstrument::EquitySymbol { symbol } => {
+                assert_eq!(symbol.as_ref(), "TEST");
             }
-            _ => panic!("Expected ResolutionFailed error"),
+            _ => panic!("Expected EquitySymbol"),
         }
     }
 

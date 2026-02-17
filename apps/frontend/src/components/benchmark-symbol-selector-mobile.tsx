@@ -80,6 +80,20 @@ const BENCHMARKS = [
     ],
   },
   {
+    group: "DSE Tanzania Indices",
+    items: [
+      { symbol: "DSEI", name: "DSE All Share Index", description: "All DSE-listed stocks" },
+      { symbol: "TSI", name: "Tanzania Share Index", description: "Domestic DSE-listed stocks" },
+      { symbol: "BI", name: "Banks & Finance Index", description: "Banking and financial stocks" },
+      { symbol: "IA", name: "Industrial & Allied Index", description: "Industrial sector stocks" },
+      {
+        symbol: "CS",
+        name: "Commercial Services Index",
+        description: "Commercial services stocks",
+      },
+    ],
+  },
+  {
     group: "ETFs",
     items: [
       {

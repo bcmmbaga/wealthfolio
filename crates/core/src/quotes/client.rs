@@ -328,6 +328,7 @@ impl MarketDataClient {
             DATA_SOURCE_MARKET_DATA_APP => DataSource::MarketDataApp,
             DATA_SOURCE_METAL_PRICE_API => DataSource::MetalPriceApi,
             DATA_SOURCE_FINNHUB => DataSource::Finnhub,
+            DATA_SOURCE_DSE => DataSource::Dse,
             DATA_SOURCE_MANUAL => DataSource::Manual,
             _ => DataSource::Yahoo, // Default fallback
         };
@@ -478,22 +479,26 @@ impl MarketDataClient {
     /// 3. Look up friendly exchange name from MIC
     /// 4. Preserve provider-reported currency only (do NOT infer from MIC)
     fn convert_search_result(result: MarketSearchResult) -> SymbolSearchResult {
-        // Try to determine MIC from Yahoo's exchange code first
-        let mut exchange_mic = yahoo_exchange_to_mic(&result.exchange).map(|mic| mic.to_string());
+        // Use provider-set exchange_mic if available, otherwise derive from Yahoo conventions
+        let exchange_mic = result.exchange_mic.clone().or_else(|| {
+            yahoo_exchange_to_mic(&result.exchange)
+                .map(|mic| mic.to_string())
+                .or_else(|| {
+                    result
+                        .symbol
+                        .rfind('.')
+                        .and_then(|pos| yahoo_suffix_to_mic(&result.symbol[pos + 1..]))
+                        .map(String::from)
+                })
+        });
 
-        // If no MIC from exchange code, try extracting from symbol suffix
-        if exchange_mic.is_none() {
-            if let Some(dot_pos) = result.symbol.rfind('.') {
-                let suffix = &result.symbol[dot_pos + 1..];
-                exchange_mic = yahoo_suffix_to_mic(suffix).map(String::from);
-            }
-        }
-
-        // Get friendly exchange name from MIC
-        let exchange_name = exchange_mic
-            .as_ref()
-            .and_then(|mic| mic_to_exchange_name(mic))
-            .map(String::from);
+        // Get friendly exchange name: prefer provider-set, then lookup from MIC
+        let exchange_name = result.exchange_name.clone().or_else(|| {
+            exchange_mic
+                .as_ref()
+                .and_then(|mic| mic_to_exchange_name(mic))
+                .map(String::from)
+        });
 
         // Determine currency and its provenance
         let (currency, currency_source) = if result.currency.is_some() {
